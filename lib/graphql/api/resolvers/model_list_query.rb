@@ -1,37 +1,38 @@
+require "graphql/api/resolvers/helpers"
+
 module GraphQL::Api
   module Resolvers
     class ModelListQuery
+      include Helpers
 
       def initialize(model)
         @model = model
-        @policy_class = "#{model.name}Policy".safe_constantize
       end
 
       def call(obj, args, ctx)
-        if @model.respond_to?(:graph_where)
-          @model.graph_where(args, ctx)
-        else
-          eager_load = []
-          ctx.irep_node.children.each do |child|
-            eager_load << child[0] if @model.reflections.find { |name, _| name == child[0] }
+        results = query(ctx, args)
+
+        policy = get_policy(ctx)
+        if policy
+          # todo: is there a more efficient way of handling this? or should you be able to skip it?
+          results.each do |instance|
+            return policy.unauthorized(:read, instance, args) unless policy.read?(instance, args)
           end
-
-          query_args = args.to_h
-          query_args.delete('limit')
-
-          q = @model.where(query_args)
-          q.eager_load(*eager_load) if eager_load.any?
-          results = q.limit(args[:limit] || 30)
-
-          if @policy_class
-            results.each do |res|
-              policy = @policy_class.new(ctx, res)
-              return policy.unauthorized! unless policy.read?
-            end
-          end
-          
-          results
         end
+
+        results
+      end
+
+      def query(ctx, query_args)
+        eager_load = []
+        ctx.irep_node.children.each do |child|
+          eager_load << child[0] if @model.reflections.find { |name, _| name == child[0] }
+        end
+
+        results = @model.where(query_args.to_h)
+        results = results.eager_load(*eager_load) if eager_load.any?
+
+        results
       end
 
     end

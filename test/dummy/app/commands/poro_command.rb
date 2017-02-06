@@ -1,9 +1,8 @@
 class PoroCommand < GraphQL::Api::CommandType
-  inputs name: :string!
-  returns poro: Poro
+  action :perform, returns: {poro: Poro}, args: {name: :string!}
 
   def perform
-    {poro: Poro.new(inputs[:name])}
+    {poro: Poro.new(args[:name])}
   end
 
 end

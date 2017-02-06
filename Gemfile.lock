@@ -1,8 +1,8 @@
 PATH
   remote: .
   specs:
-    graphql-api (0.1.6)
-      graphql (~> 1.4.1)
+    graphql-api (0.2.0)
+      graphql (~> 1.4)
       rails (>= 4.2.6)
 
 GEM

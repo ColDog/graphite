@@ -1,7 +1,7 @@
 require "graphql/api/unauthorized_exception"
 
 module GraphQL::Api
-  class Policy
+  class CommandPolicy
     attr_reader :ctx
 
     def initialize(ctx)
@@ -12,23 +12,7 @@ module GraphQL::Api
       ctx[:current_user]
     end
 
-    def create?(instance, args)
-      true
-    end
-
-    def update?(instance, params)
-      true
-    end
-
-    def destroy?(instance, params)
-      true
-    end
-
-    def read?(instance, params)
-      true
-    end
-
-    def access_field?(instance, field)
+    def perform?(cmd, action, params)
       true
     end
 
@@ -37,9 +21,7 @@ module GraphQL::Api
     end
 
     def unauthorized_field_access(field_name, instance, params)
-      # raise UnauthorizedException.new(user, "read.#{field_name}", instance, params)
       nil
     end
-
   end
 end

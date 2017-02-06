@@ -1,25 +1,23 @@
+require "graphql/api/resolvers/helpers"
+
 module GraphQL::Api
   module Resolvers
     class ModelFindQuery
+      include Helpers
 
       def initialize(model)
         @model = model
-        @policy_class = "#{model.name}Policy".safe_constantize
       end
 
       def call(obj, args, ctx)
-        if @model.respond_to?(:graph_find)
-          item = @model.graph_find(args, ctx)
-        else
-          item = @model.find_by!(args.to_h)
+        instance = @model.find_by!(args.to_h)
+
+        policy = get_policy(ctx)
+        if policy && !policy.read?(instance, args)
+          return policy.unauthorized(:read, instance, args)
         end
 
-        if @policy_class
-          policy = @policy_class.new(ctx, item)
-          return policy.unauthorized! unless policy.read?
-        end
-
-        item
+        instance
       end
 
     end

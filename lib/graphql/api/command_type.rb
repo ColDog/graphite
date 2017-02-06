@@ -1,28 +1,30 @@
 module GraphQL::Api
   class CommandType
-    attr_accessor :ctx, :inputs
+    attr_accessor :ctx, :args
 
-    def initialize(inputs, ctx)
-      @inputs = inputs
+    def initialize(args, ctx)
+      @args = args
       @ctx = ctx
     end
 
-    def self.inputs(inputs=nil)
-      @inputs = inputs if inputs
-      @inputs || {}
+    def self.actions
+      @actions ||= {}
     end
 
-    def self.returns(fields=nil)
-      @returns = fields if fields
-      @returns || {}
+    def self.action(action, returns: {}, args: {})
+      actions[action] = {returns: returns, args: args}
     end
 
-    def self.actions(*actions)
-      @actions = actions if actions.any?
-      @actions || []
+    def current_user
+      @ctx[:current_user]
     end
 
-    def perform
+    def inputs
+      @args
+    end
+
+    def arguments
+      @args
     end
 
   end

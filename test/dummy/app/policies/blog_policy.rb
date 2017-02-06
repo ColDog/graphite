@@ -1,23 +1,23 @@
 class BlogPolicy < GraphQL::Api::Policy
 
-  def read?
+  def read?(*)
     ctx[:test_key].nil?
   end
 
-  def destroy?
+  def destroy?(*)
     ctx[:test_key].nil?
   end
 
-  def create?
+  def create?(*)
     ctx[:test_key].nil?
   end
 
-  def update?
+  def update?(*)
     ctx[:test_key].nil?
   end
 
-  def access_name?
-    false
+  def access_field?(object, field)
+    field.to_sym != :name
   end
 
 end

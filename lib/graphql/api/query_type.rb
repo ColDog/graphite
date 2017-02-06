@@ -1,23 +1,27 @@
 module GraphQL::Api
   class QueryType
-    attr_accessor :ctx, :inputs
+    attr_accessor :ctx, :args
 
-    def initialize(inputs, ctx)
-      @inputs = inputs
+    def initialize(args, ctx)
+      @args = args
       @ctx = ctx
     end
 
-    def self.arguments(arguments=nil)
-      @arguments = arguments if arguments
-      @arguments || []
+    def self.actions
+      @actions ||= {}
     end
 
-    def self.return_type(type=nil)
-      @return_type = type if type
-      @return_type
+    def self.action(action, returns: nil, args: {})
+      raise("Query should return a single type") if returns.is_a?(Hash)
+      actions[action] = {returns: returns, args: args}
     end
 
-    def execute
+    def current_user
+      @ctx[:current_user]
+    end
+
+    def arguments
+      @args
     end
 
   end

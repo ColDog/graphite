@@ -3,19 +3,7 @@ require 'test_helper'
 class GraphQL::Api::Test < ActiveSupport::TestCase
 
   def schema
-    GraphQL::Api::Schema.new.schema
-  end
-
-  setup do
-    (1..20).each do
-      author = Author.create!(name: 'test')
-      blog = Blog.create!(name: 'test', content: 'foobar', author: author)
-      tag = Tag.create!(name: 'testing')
-      BlogTag.create!(blog: blog, tag: tag)
-
-      tag = Tag.create!(name: 'testing2')
-      BlogTag.create!(blog: blog, tag: tag)
-    end
+    GraphQL::Api.schema
   end
 
   def schema_query(query, opts={})
@@ -39,11 +27,7 @@ class GraphQL::Api::Test < ActiveSupport::TestCase
   end
 
   test "read multiple blogs" do
-    schema_query("query { blogs { id, name, author { name } } }")
-  end
-
-  test "read multiple blogs limit" do
-    schema_query("query { blogs(limit: 5) { id, name } }")
+    schema_query("query { blogs { id, name } }")
   end
 
   test "read multiple blogs with tags" do
@@ -85,10 +69,17 @@ class GraphQL::Api::Test < ActiveSupport::TestCase
     schema_query('query { blogQuery(content_matches: ["name"]) { id, name } }', should_fail: true)
   end
 
-  test "query blog" do
-    schema_query('query { blogQuery(reqs: "required") { id, name } }')
+  test "query blogs multiple" do
+    schema_query('
+      query { blogQuery(reqs: "required") { id, name } }
+      query { blogs() { id, name } }
+      query { blog(id: 1) { id, name, content } }
+    ')
   end
 
+  test "query blog secondary" do
+    schema_query('query { secondaryBlogQuery(reqs: "required") { id, name } }')
+  end
 
   test "custom mutation" do
     simple_mutation = GraphQL::Relay::Mutation.define do
@@ -97,12 +88,12 @@ class GraphQL::Api::Test < ActiveSupport::TestCase
       resolve -> (obj, args, ctx) {  {item: 'hello'}  }
     end
 
-    graphite = GraphQL::Api.graph
-    mutation = graphite.mutation do
+    config = GraphQL::Api::Configure.new
+    mutation = config.graphql_mutation do
       field 'simpleMutation', simple_mutation.field
     end
 
-    schema = GraphQL::Schema.define(query: graphite.query, mutation: mutation)
+    schema = GraphQL::Schema.define(query: config.graphql_query, mutation: mutation)
     schema.execute('mutation { simpleMutation(input: {name: "hello"}) { item } }')
   end
 
@@ -128,6 +119,18 @@ class GraphQL::Api::Test < ActiveSupport::TestCase
   test "policy object delete failing" do
     assert_raises(GraphQL::Api::UnauthorizedException) do
       schema_query('mutation { deleteBlog(input: {id: 1}) { blog { id } } }', context: { test_key: 1 })
+    end
+  end
+
+  test "policy object query unauthorized" do
+    assert_raises(GraphQL::Api::UnauthorizedException) do
+      schema_query('query { blockedQuery() { id } }')
+    end
+  end
+
+  test "policy object command unauthorized" do
+    assert_raises(GraphQL::Api::UnauthorizedException) do
+      schema_query('mutation { blockedCommand(input: {name: "foobar"}) { poro { name } } }')
     end
   end
 

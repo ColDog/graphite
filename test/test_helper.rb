@@ -19,3 +19,33 @@ if ActiveSupport::TestCase.respond_to?(:fixture_path=)
   ActiveSupport::TestCase.file_fixture_path = ActiveSupport::TestCase.fixture_path + "/files"
   ActiveSupport::TestCase.fixtures :all
 end
+
+
+# do test setup
+(1..20).each do
+  author = Author.create!(name: 'test')
+  blog = Blog.create!(name: 'test', content: 'foobar', author: author)
+  tag = Tag.create!(name: 'testing')
+  BlogTag.create!(blog: blog, tag: tag)
+
+  tag = Tag.create!(name: 'testing2')
+  BlogTag.create!(blog: blog, tag: tag)
+end
+
+GraphQL::Api.configure do
+  model Author
+  model BlogTag
+  model Tag
+  model Blog
+  model Poro
+
+  command BlogCommand, action: :update
+  command BlogCommand, action: :delete
+  command BlogCreateCommand
+  command PoroCommand
+  command BlockedCommand
+
+  query BlogQuery
+  query BlogQuery, action: :secondary
+  query BlockedQuery
+end

@@ -1,24 +1,24 @@
+require "graphql/api/resolvers/helpers"
+
 module GraphQL::Api
   module Resolvers
     class ModelCreateMutation
+      include Helpers
 
-      def initialize(model, policy=nil)
+      def initialize(model)
         @model = model
-        @policy_class = "#{model.name}Policy".safe_constantize
       end
 
       def call(obj, args, ctx)
-        if @policy_class
-          policy = @policy_class.new(ctx, nil)
-          return policy.unauthorized! unless policy.create?
+        instance = @model.new(args.to_h)
+
+        policy = get_policy(ctx)
+        if policy && !policy.create?(instance, args)
+          return policy.unauthorized(:create, instance, args)
         end
 
-        item = @model.create!(args.to_h)
-        {key => item}
-      end
-
-      def key
-        @model.name.underscore.to_sym
+        instance.save!
+        {key => instance}
       end
 
     end
