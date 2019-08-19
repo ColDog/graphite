@@ -35,18 +35,26 @@ module GraphQL::Api
 
     # Return the graphQL schema
     def schema
-      @schema ||= GraphQL::Schema.define(query: graphql_query, mutation: graphql_mutation)
+      @schema ||= GraphQL::Schema.define(
+        query: graphql_query,
+        mutation: graphql_mutation,
+        resolve_type: lambda { |obj, ctx| @types[obj.class] }
+      )
     end
 
     def with_defaults(commands: [], queries: [], models: [])
-      (all_constants('queries') + queries).each do |query_class|
-        query(query_class)
-      end
       (all_constants('models') + models).each do |model_class|
         model(model_class)
       end
+      (all_constants('queries') + queries).each do |query_class|
+        query_class.actions.keys.each do |action|
+          query(query_class, action: action)
+        end
+      end
       (all_constants('commands') + commands).each do |command_class|
-        command(command_class)
+        command_class.actions.keys.each do |action|
+          command(command_class, action: action)
+        end
       end
     end
 
@@ -83,7 +91,7 @@ module GraphQL::Api
     end
 
     def command(model, action: :perform, resolver: nil)
-      raise("Action does not exist on #{model.name}") unless model.actions[action]
+      raise("Action #{action} does not exist on #{model.name}") unless model.actions[action]
 
       mutation = command_mutation_type(model, action, resolver: resolver, resolver_class: command_resolver)
       @graphql_objects << MutationDescription.new(mutation)

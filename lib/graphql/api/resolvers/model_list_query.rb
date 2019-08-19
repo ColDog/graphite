@@ -25,8 +25,11 @@ module GraphQL::Api
 
       def query(ctx, query_args)
         eager_load = []
-        ctx.irep_node.children.each do |child|
-          eager_load << child[0] if @model.reflections.find { |name, _| name == child[0] }
+        children_names = ctx.irep_node.typed_children.values.map(&:keys).flatten
+        children_names.each do |child_name|
+          eager_load << child_name if @model.reflections.find do |name, association|
+            name == child_name && !association.polymorphic?
+          end
         end
 
         results = @model.where(query_args.to_h)
